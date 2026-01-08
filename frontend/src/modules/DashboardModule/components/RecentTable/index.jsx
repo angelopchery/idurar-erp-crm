@@ -1,18 +1,30 @@
 import { Dropdown, Table } from 'antd';
+import {
+  EllipsisOutlined,
+  EyeOutlined,
+  EditOutlined,
+  FilePdfOutlined,
+} from '@ant-design/icons';
 
 import { request } from '@/request';
 import useFetch from '@/hooks/useFetch';
-
-import { EllipsisOutlined, EyeOutlined, EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { erp } from '@/redux/erp/actions';
 import useLanguage from '@/locale/useLanguage';
 import { useNavigate } from 'react-router-dom';
 import { DOWNLOAD_BASE_URL } from '@/config/serverApiConfig';
 
-export default function RecentTable({ ...props }) {
+export default function RecentTable(props) {
   const translate = useLanguage();
-  let { entity, dataTableColumns } = props;
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { entity, dataTableColumns } = props;
+
+  /** ✅ SAFETY: ensure columns is always an array */
+  const safeColumns = Array.isArray(dataTableColumns)
+    ? dataTableColumns
+    : [];
 
   const items = [
     {
@@ -32,23 +44,26 @@ export default function RecentTable({ ...props }) {
     },
   ];
 
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
   const handleRead = (record) => {
     dispatch(erp.currentItem({ data: record }));
     navigate(`/${entity}/read/${record._id}`);
   };
+
   const handleEdit = (record) => {
     dispatch(erp.currentAction({ actionType: 'update', data: record }));
     navigate(`/${entity}/update/${record._id}`);
   };
+
   const handleDownload = (record) => {
-    window.open(`${DOWNLOAD_BASE_URL}${entity}/${entity}-${record._id}.pdf`, '_blank');
+    window.open(
+      `${DOWNLOAD_BASE_URL}${entity}/${entity}-${record._id}.pdf`,
+      '_blank'
+    );
   };
 
-  dataTableColumns = [
-    ...dataTableColumns,
+  /** ✅ Always append action column safely */
+  const columns = [
+    ...safeColumns,
     {
       title: '',
       key: 'action',
@@ -57,26 +72,15 @@ export default function RecentTable({ ...props }) {
           menu={{
             items,
             onClick: ({ key }) => {
-              switch (key) {
-                case 'read':
-                  handleRead(record);
-                  break;
-                case 'edit':
-                  handleEdit(record);
-                  break;
-                case 'download':
-                  handleDownload(record);
-                  break;
-
-                default:
-                  break;
-              }
+              if (key === 'read') handleRead(record);
+              if (key === 'edit') handleEdit(record);
+              if (key === 'download') handleDownload(record);
             },
           }}
           trigger={['click']}
         >
           <EllipsisOutlined
-            style={{ cursor: 'pointer', fontSize: '24px' }}
+            style={{ cursor: 'pointer', fontSize: 20 }}
             onClick={(e) => e.preventDefault()}
           />
         </Dropdown>
@@ -84,20 +88,20 @@ export default function RecentTable({ ...props }) {
     },
   ];
 
-  const asyncList = () => {
-    return request.list({ entity });
-  };
+  const asyncList = () => request.list({ entity });
+
   const { result, isLoading, isSuccess } = useFetch(asyncList);
-  const firstFiveItems = () => {
-    if (isSuccess && result) return result.slice(0, 5);
-    return [];
-  };
+
+  const dataSource =
+    isSuccess && Array.isArray(result)
+      ? result.slice(0, 5)
+      : [];
 
   return (
     <Table
-      columns={dataTableColumns}
+      columns={columns}
       rowKey={(item) => item._id}
-      dataSource={isSuccess && firstFiveItems()}
+      dataSource={dataSource}
       pagination={false}
       loading={isLoading}
       scroll={{ x: true }}

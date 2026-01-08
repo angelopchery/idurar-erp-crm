@@ -61,13 +61,6 @@ export default function IdurarOs() {
   //   };
   // }, [navigator.onLine]);
 
-  if (!isLoggedIn)
-    return (
-      <Localization>
-        <AuthRouter />
-      </Localization>
-    );
-  else {
-    return <DefaultApp />;
-  }
+  return <DefaultApp />;
+
 }

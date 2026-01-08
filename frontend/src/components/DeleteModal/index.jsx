@@ -3,67 +3,73 @@ import { Modal } from 'antd';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { crud } from '@/redux/crud/actions';
-import { useCrudContext } from '@/context/crud';
-import { useAppContext } from '@/context/appContext';
 import { selectDeletedItem } from '@/redux/crud/selectors';
 import { valueByString } from '@/utils/helpers';
-
 import useLanguage from '@/locale/useLanguage';
 
+import { useCrudContext } from '@/context/crud';
+import { useAppContext } from '@/context/appContext';
+
 export default function DeleteModal({ config }) {
+  let crudContextAction = {};
+  let state = {};
+  let appContextAction = {};
+
+  try {
+    const ctx = useCrudContext();
+    crudContextAction = ctx.crudContextAction || {};
+    state = ctx.state || {};
+    appContextAction = useAppContext().appContextAction || {};
+  } catch {
+    return null;
+  }
+
+  const { panel, readBox, modal } = crudContextAction;
+  const { navMenu } = appContextAction;
+  const { isModalOpen } = state;
+
+  const dispatch = useDispatch();
   const translate = useLanguage();
-  let {
+
+  const {
     entity,
     deleteModalLabels,
     deleteMessage = translate('are_you_sure_you_want_to_delete'),
     modalTitle = translate('delete_confirmation'),
   } = config;
-  const dispatch = useDispatch();
+
   const { current, isLoading, isSuccess } = useSelector(selectDeletedItem);
-  const { state, crudContextAction } = useCrudContext();
-  const { appContextAction } = useAppContext();
-  const { panel, readBox } = crudContextAction;
-  const { navMenu } = appContextAction;
-  const { isModalOpen } = state;
-  const { modal } = crudContextAction;
   const [displayItem, setDisplayItem] = useState('');
 
   useEffect(() => {
     if (isSuccess) {
-      console.log('🚀 ~ useEffect ~ DeleteModal isSuccess:', isSuccess);
       modal.close();
       dispatch(crud.list({ entity }));
-      // dispatch(crud.resetAction({actionType:"delete"})); // check here maybe it wrong
     }
-    if (current) {
-      let labels = deleteModalLabels.map((x) => valueByString(current, x)).join(' ');
 
-      setDisplayItem(labels);
+    if (current && deleteModalLabels) {
+      setDisplayItem(
+        deleteModalLabels.map((x) => valueByString(current, x)).join(' ')
+      );
     }
   }, [isSuccess, current]);
 
-  const handleOk = () => {
-    const id = current._id;
-    dispatch(crud.delete({ entity, id }));
-    readBox.close();
-    modal.close();
-    panel.close();
-    navMenu.collapse();
-  };
-  const handleCancel = () => {
-    if (!isLoading) modal.close();
-  };
   return (
     <Modal
-      title={modalTitle}
       open={isModalOpen}
-      onOk={handleOk}
-      onCancel={handleCancel}
+      title={modalTitle}
       confirmLoading={isLoading}
+      onOk={() => {
+        dispatch(crud.delete({ entity, id: current._id }));
+        readBox.close();
+        modal.close();
+        panel.close();
+        navMenu?.collapse?.();
+      }}
+      onCancel={() => !isLoading && modal.close()}
     >
       <p>
-        {deleteMessage}
-        {displayItem}
+        {deleteMessage} {displayItem}
       </p>
     </Modal>
   );

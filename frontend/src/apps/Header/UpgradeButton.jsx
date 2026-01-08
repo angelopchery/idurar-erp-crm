@@ -1,9 +1,5 @@
-import { Avatar, Popover, Button, Badge, Col, List } from 'antd';
-
-// import Notifications from '@/components/Notification';
-
+import { Button, Badge } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
-
 import useLanguage from '@/locale/useLanguage';
 
 export default function UpgradeButton() {
@@ -13,24 +9,19 @@ export default function UpgradeButton() {
     <Badge count={1} size="small">
       <Button
         type="primary"
-        style={{
-          float: 'right',
-          marginTop: '5px',
-          cursor: 'pointer',
-          background: '#16923e',
-          boxShadow: '0 2px 0 rgb(82 196 26 / 20%)',
-        }}
         icon={<RocketOutlined />}
-        onClick={() => {
-          window.open(`https://entreprise.idurarapp.com`);
+        style={{
+          height: 40,
+          padding: '0 18px',
+          background: 'linear-gradient(135deg, #1db954, #16923e)',
+          border: 'none',
+          fontWeight: 600,
+          boxShadow: '0 6px 16px rgba(22, 146, 62, 0.35)',
         }}
+        onClick={() => window.open('https://entreprise.idurarapp.com')}
       >
-        {translate('Try Entreprise Version')}
+        {translate('Try Enterprise')}
       </Button>
     </Badge>
   );
 }
-
-console.log(
-  '🚀 Welcome to IDURAR ERP CRM! Did you know that we also offer commercial customization services? Contact us at hello@idurarapp.com for more information.'
-);

@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { Select, Empty } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import { request } from '@/request';
 import useOnFetch from '@/hooks/useOnFetch';
 import useDebounce from '@/hooks/useDebounce';
-import { useNavigate } from 'react-router-dom';
-
-import { Select, Empty } from 'antd';
 import useLanguage from '@/locale/useLanguage';
 
 export default function AutoCompleteAsync({
@@ -16,130 +15,75 @@ export default function AutoCompleteAsync({
   redirectLabel = 'Add New',
   withRedirect = false,
   urlToRedirect = '/',
-  value, /// this is for update
-  onChange, /// this is for update
+  value,
+  onChange,
 }) {
   const translate = useLanguage();
-
-  const addNewValue = { value: 'redirectURL', label: `+ ${translate(redirectLabel)}` };
-
-  const [selectOptions, setOptions] = useState([]);
-  const [currentValue, setCurrentValue] = useState(undefined);
-
-  const isUpdating = useRef(true);
-  const isSearching = useRef(false);
-
-  const [searching, setSearching] = useState(false);
-
-  const [valToSearch, setValToSearch] = useState('');
-  const [debouncedValue, setDebouncedValue] = useState('');
-
   const navigate = useNavigate();
 
-  const handleSelectChange = (newValue) => {
-    isUpdating.current = false;
-    // setCurrentValue(value[outputValue] || value); // set nested value or value
-    // onChange(newValue[outputValue] || newValue);
-    if (onChange) {
-      if (newValue) onChange(newValue[outputValue] || newValue);
-    }
-    if (newValue === 'redirectURL' && withRedirect) {
-      navigate(urlToRedirect);
-    }
-  };
+  const [options, setOptions] = useState([]);
+  const [currentValue, setCurrentValue] = useState(undefined);
+  const [search, setSearch] = useState('');
+  const [debounced] = useDebounce(search, 500);
 
-  const handleOnSelect = (value) => {
-    setCurrentValue(value[outputValue] || value); // set nested value or value
-  };
+  const initialized = useRef(false);
 
-  const [, cancel] = useDebounce(
-    () => {
-      //  setState("Typing stopped");
-      setDebouncedValue(valToSearch);
-    },
-    500,
-    [valToSearch]
-  );
-
-  const asyncSearch = async (options) => {
-    return await request.search({ entity, options });
-  };
-
-  let { onFetch, result, isSuccess, isLoading } = useOnFetch();
-
-  const labels = (optionField) => {
-    return displayLabels.map((x) => optionField[x]).join(' ');
-  };
+  const { onFetch, result, isSuccess, isLoading } = useOnFetch();
 
   useEffect(() => {
-    const options = {
-      q: debouncedValue,
-      fields: searchFields,
-    };
-    const callback = asyncSearch(options);
-    onFetch(callback);
+    if (!debounced) return;
 
-    return () => {
-      cancel();
-    };
-  }, [debouncedValue]);
-
-  const onSearch = (searchText) => {
-    isSearching.current = true;
-    setSearching(true);
-    // setOptions([]);
-    // setCurrentValue(undefined);
-    setValToSearch(searchText);
-  };
+    onFetch(
+      request.search({
+        entity,
+        options: { q: debounced, fields: searchFields },
+      })
+    );
+  }, [debounced]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && Array.isArray(result)) {
       setOptions(result);
-    } else {
-      setSearching(false);
-      // setCurrentValue(undefined);
-      // setOptions([]);
     }
   }, [isSuccess, result]);
+
   useEffect(() => {
-    // this for update Form , it's for setField
-    if (value && isUpdating.current) {
+    if (value && !initialized.current) {
       setOptions([value]);
-      setCurrentValue(value[outputValue] || value); // set nested value or value
-      onChange(value[outputValue] || value);
-      isUpdating.current = false;
+      setCurrentValue(value[outputValue] || value);
+      initialized.current = true;
     }
   }, [value]);
 
   return (
     <Select
-      loading={isLoading}
       showSearch
       allowClear
+      loading={isLoading}
       placeholder={translate('Search')}
-      defaultActiveFirstOption={false}
       filterOption={false}
-      notFoundContent={searching ? '... Searching' : <Empty />}
+      notFoundContent={<Empty />}
       value={currentValue}
-      onSearch={onSearch}
-      onClear={() => {
-        // setOptions([]);
-        // setCurrentValue(undefined);
-        setSearching(false);
+      onSearch={setSearch}
+      onChange={(val) => {
+        setCurrentValue(val);
+        onChange?.(val);
+        if (val === 'redirectURL' && withRedirect) {
+          navigate(urlToRedirect);
+        }
       }}
-      onChange={handleSelectChange}
-      style={{ minWidth: '220px' }}
-      // onSelect={handleOnSelect}
+      style={{ minWidth: 220 }}
     >
-      {selectOptions.map((optionField) => (
-        <Select.Option
-          key={optionField[outputValue] || optionField}
-          value={optionField[outputValue] || optionField}
-        >
-          {labels(optionField)}
+      {options.map((o) => (
+        <Select.Option key={o[outputValue]} value={o[outputValue]}>
+          {displayLabels.map((l) => o[l]).join(' ')}
         </Select.Option>
       ))}
-      {withRedirect && <Select.Option value={addNewValue.value}>{addNewValue.label}</Select.Option>}
+      {withRedirect && (
+        <Select.Option value="redirectURL">
+          + {translate(redirectLabel)}
+        </Select.Option>
+      )}
     </Select>
   );
 }

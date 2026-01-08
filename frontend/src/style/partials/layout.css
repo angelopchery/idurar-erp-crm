@@ -1,15 +1,45 @@
+/* ============================= */
+/* CONTAINER WIDTH FIXES         */
+/* ============================= */
+
+/* Force full-width layout */
 .wideAppContainer {
-  max-width: 1150px;
+  max-width: none;
+  width: 100%;
 }
 
 .appContainer {
-  max-width: 1050px;
+  max-width: none;
+  width: 100%;
 }
 
+/* Sidebar spacing (keep original intent) */
 .smallNavigation {
   margin-left: 100px;
 }
 
 .wideNavigation {
   margin-left: 220px;
+}
+
+/* ============================= */
+/* GLOBAL SURFACE STYLES         */
+/* ============================= */
+
+/* Dashboard & ERP content cards */
+.whiteBox {
+  background: #f9fafb; /* soft off-white */
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+
+  /* ⬇️ CRITICAL FIX */
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Prevent Ant Design forcing white backgrounds */
+.ant-layout-content {
+  background: transparent;
 }

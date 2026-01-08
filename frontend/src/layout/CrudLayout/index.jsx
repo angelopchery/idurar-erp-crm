@@ -1,49 +1,39 @@
 import { useEffect, useState } from 'react';
-
 import DefaultLayout from '../DefaultLayout';
 
 import SidePanel from '@/components/SidePanel';
 import { Layout } from 'antd';
 import { useCrudContext } from '@/context/crud';
-import { useAppContext } from '@/context/appContext';
 
 const { Content } = Layout;
 
+/**
+ * Safe ContentBox
+ * - Does NOT crash if CrudContextProvider is missing
+ * - Properly fits viewport (no zoom / no overflow)
+ */
 const ContentBox = ({ children }) => {
-  const { state: stateCrud, crudContextAction } = useCrudContext();
-  const { state: stateApp } = useAppContext();
-  const { isPanelClose } = stateCrud;
-  // const { isNavMenuClose } = stateApp;
-  const { panel } = crudContextAction;
+  let isPanelClose = true;
 
-  const [isSidePanelClose, setSidePanel] = useState(isPanelClose);
+  // ✅ Safe access to CrudContext
+  try {
+    const { state } = useCrudContext();
+    isPanelClose = state?.isPanelClose ?? true;
+  } catch (e) {
+    // Route not wrapped in CrudContextProvider (Dashboard, About, etc.)
+    // This is expected and safe
+  }
 
-  useEffect(() => {
-    let timer = [];
-    if (isPanelClose) {
-      timer = setTimeout(() => {
-        setSidePanel(isPanelClose);
-      }, 200);
-    } else {
-      setSidePanel(isPanelClose);
-    }
-
-    return () => clearTimeout(timer);
-  }, [isPanelClose]);
-
-  // useEffect(() => {
-  //   if (!isNavMenuClose) {
-  //     panel.close();
-  //   }
-  // }, [isNavMenuClose]);
   return (
     <Content
-      className="whiteBox shadow layoutPadding"
+      className="whiteBox shadow"
       style={{
-        margin: '30px auto',
+        margin: 0,
+        padding: '24px',
         width: '100%',
-        maxWidth: '100%',
-        flex: 'none',
+        minHeight: 'calc(100vh - 64px)', // header height
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
       }}
     >
       {children}
@@ -59,17 +49,18 @@ export default function CrudLayout({
   fixHeaderPanel,
 }) {
   return (
-    <>
-      <DefaultLayout>
+    <DefaultLayout>
+      {/* ✅ Render SidePanel only when config exists */}
+      {config && (
         <SidePanel
           config={config}
           topContent={sidePanelTopContent}
           bottomContent={sidePanelBottomContent}
           fixHeaderPanel={fixHeaderPanel}
-        ></SidePanel>
+        />
+      )}
 
-        <ContentBox> {children}</ContentBox>
-      </DefaultLayout>
-    </>
+      <ContentBox>{children}</ContentBox>
+    </DefaultLayout>
   );
 }

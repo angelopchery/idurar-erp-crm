@@ -1,0 +1,26 @@
+# ===== Root ignores =====
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# Docker
+docker-compose.override.yml
+
+# Editor
+.vscode/
+.idea/
+
+# Temporary
+tmp/
+
+# Node version managers
+nvm
+nvm-setup.exe
